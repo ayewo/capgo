@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.200.0/http/server.ts'
 
 import { getRedis } from '../_utils/redis.ts'
 import { update } from '../_utils/update.ts'
-import { methodJson, sendRes, sendResText } from '../_utils/utils.ts'
+import { methodJson, sendRes, sendResText, reverseDomainRegex } from '../_utils/utils.ts'
 import type { AppInfos, BaseHeaders } from '../_utils/types.ts'
 
 const APP_DOES_NOT_EXIST = { message: 'App not found', error: 'app_not_found' }
@@ -45,6 +45,12 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppInf
     is_emulator: isEmulator,
     is_prod: isProd,
   } = parseResult.data
+
+  
+  if (!appId || !reverseDomainRegex.test(appId)) {
+    console.log('[redis] Not cached - does not exist')
+    return sendRes(APP_DOES_NOT_EXIST)
+  }
 
   const appCacheKey = `app_${appId}`
   const deviceCacheKey = `device_${deviceId}`

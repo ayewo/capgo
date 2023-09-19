@@ -22,6 +22,8 @@ export const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+export const reverseDomainRegex = /^[a-z0-9]+(\.[a-z0-9]+)+$/i
+
 export function shallowCleanObject(obj: Record<string, unknown>) {
   return Object.entries(obj).reduce((acc, [key, value]) => {
     if (value ?? false)

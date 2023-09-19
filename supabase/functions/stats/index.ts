@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.200.0/http/server.ts'
 import * as semver from 'https://deno.land/x/semver@v1.4.1/mod.ts'
-import { methodJson, sendRes } from '../_utils/utils.ts'
+import { methodJson, sendRes, reverseDomainRegex } from '../_utils/utils.ts'
 import { supabaseAdmin, updateOnpremStats } from '../_utils/supabase.ts'
 import type { AppStats, BaseHeaders } from '../_utils/types.ts'
 import type { Database } from '../_utils/supabase.types.ts'
@@ -32,6 +32,13 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppSta
       is_prod = true,
     } = body
 
+    if (!app_id || !reverseDomainRegex.test(app_id)) {
+      return sendRes({
+        message: 'App not found',
+        error: 'app_not_found',
+      }, 200)
+    }
+  
     const coerce = semver.coerce(version_build)
 
     const { data: appOwner } = await supabaseAdmin()
