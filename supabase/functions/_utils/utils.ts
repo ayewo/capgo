@@ -23,6 +23,8 @@ export const corsHeaders = {
 }
 
 export const reverseDomainRegex = /^[a-z0-9]+(\.[a-z0-9]+)+$/i
+export const deviceIdRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 
 export function shallowCleanObject(obj: Record<string, unknown>) {
   return Object.entries(obj).reduce((acc, [key, value]) => {

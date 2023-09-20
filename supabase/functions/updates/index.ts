@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.200.0/http/server.ts'
 
 import { getRedis } from '../_utils/redis.ts'
 import { update } from '../_utils/update.ts'
-import { methodJson, sendRes, sendResText, reverseDomainRegex } from '../_utils/utils.ts'
+import { methodJson, sendRes, sendResText, reverseDomainRegex, deviceIdRegex } from '../_utils/utils.ts'
 import type { AppInfos, BaseHeaders } from '../_utils/types.ts'
 
 const APP_DOES_NOT_EXIST = { message: 'App not found', error: 'app_not_found' }
@@ -11,12 +11,26 @@ const APP_VERSION_NO_NEW = { message: 'No new version available' }
 const CACHE_NO_NEW_VAL = 'NO_NEW'
 
 const jsonRequestSchema = z.object({
-  device_id: z.string(),
-  version_name: z.string(),
-  app_id: z.string(),
+  app_id: z.string({
+    required_error: "App ID is required",
+    invalid_type_error: "App ID name must be a string",
+  }),
+  device_id: z.string({
+    required_error: "Device ID is required",
+    invalid_type_error: "Device ID must be a string",
+  }).max(36),
+  version_name: z.string({
+    required_error: "Version name is required",
+    invalid_type_error: "Version name must be a string",
+  }),
   is_emulator: z.optional(z.boolean()),
   is_prod: z.optional(z.boolean()),
 })
+.refine((data) => reverseDomainRegex.test(data.app_id), {
+  message: "App ID name must be a reverse domain string",
+}).refine((data) => deviceIdRegex.test(data.device_id), {
+  message: "Device ID must be a valid UUID string"
+});
 
 const headersSchema = z.object({
   'x-update-status': z.enum(['app_not_found', 'no_new', 'new_version', 'fail']),
@@ -45,12 +59,6 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppInf
     is_emulator: isEmulator,
     is_prod: isProd,
   } = parseResult.data
-
-  
-  if (!appId || !reverseDomainRegex.test(appId)) {
-    console.log('[redis] Not cached - does not exist')
-    return sendRes(APP_DOES_NOT_EXIST)
-  }
 
   const appCacheKey = `app_${appId}`
   const deviceCacheKey = `device_${deviceId}`

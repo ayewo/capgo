@@ -1,6 +1,7 @@
+import { z } from 'https://deno.land/x/zod@v3.22.2/mod.ts'
 import { serve } from 'https://deno.land/std@0.200.0/http/server.ts'
 import * as semver from 'https://deno.land/x/semver@v1.4.1/mod.ts'
-import { methodJson, sendRes, reverseDomainRegex } from '../_utils/utils.ts'
+import { methodJson, sendRes, reverseDomainRegex, deviceIdRegex } from '../_utils/utils.ts'
 import { supabaseAdmin, updateOnpremStats } from '../_utils/supabase.ts'
 import type { AppStats, BaseHeaders } from '../_utils/types.ts'
 import type { Database } from '../_utils/supabase.types.ts'
@@ -13,6 +14,44 @@ const failActions = [
   'update_fail',
   'download_fail',
 ]
+
+// ios sends 13 fields while android sends 11 fields
+const jsonRequestSchema = z.object({
+  app_id: z.string({
+    required_error: "App ID is required",
+    invalid_type_error: "App ID name must be a string",
+  }),
+  device_id: z.string({
+    required_error: "Device ID is required",
+    invalid_type_error: "Device ID must be a string",
+  }).max(36),
+  platform: z.string({
+    required_error: "Platform type is required",
+    invalid_type_error: "Platform type must be a string",
+  }),
+  version_name: z.string({
+    required_error: "Version name is required",
+    invalid_type_error: "Version name must be a string",
+  }),
+  version_os: z.string({
+    required_error: "Version OS is required",
+    invalid_type_error: "Version OS must be a string",
+  }),
+  version_code: z.optional(z.string()),
+  version_build: z.optional(z.string()),
+  action: z.optional(z.string()),
+  custom_id: z.optional(z.string()),
+  channel: z.optional(z.string()),
+  plugin_version: z.optional(z.string()),
+  is_emulator: z.optional(z.boolean()),
+  is_prod: z.optional(z.boolean()),
+})
+.refine((data) => reverseDomainRegex.test(data.app_id), {
+  message: "App ID name must be a reverse domain string",
+}).refine((data) => deviceIdRegex.test(data.device_id), {
+  message: "Device ID must be a valid UUID string"
+});
+
 async function main(url: URL, headers: BaseHeaders, method: string, body: AppStats) {
   try {
     console.log('body', body)
@@ -32,13 +71,10 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppSta
       is_prod = true,
     } = body
 
-    if (!app_id || !reverseDomainRegex.test(app_id)) {
-      return sendRes({
-        message: 'App not found',
-        error: 'app_not_found',
-      }, 200)
-    }
-  
+  const parseResult = jsonRequestSchema.passthrough().safeParse(body)
+  if (!parseResult.success)
+    return sendRes({ error: `Cannot parse json: ${parseResult.error}` }, 400)
+
     const coerce = semver.coerce(version_build)
 
     const { data: appOwner } = await supabaseAdmin()
