@@ -55,6 +55,13 @@ const jsonRequestSchema = z.object({
 async function main(url: URL, headers: BaseHeaders, method: string, body: AppStats) {
   try {
     console.log('body', body)
+    let parseResult = null
+    try {
+        parseResult = jsonRequestSchema.parse(body)
+    } catch (error) {
+      return sendRes({ error: `Cannot parse json: ${error}` }, 400)
+    }
+    
     let {
       version_name,
       version_build,
@@ -70,10 +77,6 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppSta
       is_emulator = false,
       is_prod = true,
     } = body
-
-  const parseResult = jsonRequestSchema.passthrough().safeParse(body)
-  if (!parseResult.success)
-    return sendRes({ error: `Cannot parse json: ${parseResult.error}` }, 400)
 
     const coerce = semver.coerce(version_build)
 

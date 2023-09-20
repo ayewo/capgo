@@ -24,7 +24,7 @@ const jsonRequestSchema = z.object({
     invalid_type_error: "Version name must be a string",
   }),
   is_emulator: z.optional(z.boolean()),
-  is_prod: z.optional(z.boolean()),
+  is_prod: z.optional(z.boolean())
 })
 .refine((data) => reverseDomainRegex.test(data.app_id), {
   message: "App ID name must be a reverse domain string",
@@ -54,10 +54,6 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppInf
     console.log('[redis] cannot get redis')
     return update(body)
   }
-
-  // const parseResult = jsonRequestSchema.passthrough().safeParse(body)
-  // if (!parseResult.success)
-  //   return sendRes({ error: `Cannot parse json: ${parseResult.error}` }, 400)
 
   const {
     device_id: deviceId,
