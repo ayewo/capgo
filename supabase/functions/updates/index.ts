@@ -40,6 +40,13 @@ const headersSchema = z.object({
 const bypassRedis = false
 
 async function main(url: URL, headers: BaseHeaders, method: string, body: AppInfos) {
+  let parseResult = null
+  try {
+      parseResult = jsonRequestSchema.parse(body)
+  } catch (error) {
+    return sendRes({ error: `Cannot parse json: ${error}` }, 400)
+  }
+
   // const redis = null
   const redis = await getRedis()
 
@@ -48,12 +55,6 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppInf
     return update(body)
   }
 
-  let parseResult = null
-  try {
-      parseResult = jsonRequestSchema.parse(body)
-  } catch (error) {
-    return sendRes({ error: `Cannot parse json: ${error}` }, 400)
-  }
   // const parseResult = jsonRequestSchema.passthrough().safeParse(body)
   // if (!parseResult.success)
   //   return sendRes({ error: `Cannot parse json: ${parseResult.error}` }, 400)
