@@ -48,10 +48,15 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppInf
     return update(body)
   }
 
-  // passthrough().
-  const parseResult = jsonRequestSchema.safeParse(body)
-  if (!parseResult.success)
-    return sendRes({ error: `Cannot parse json: ${parseResult.error}` }, 400)
+  let parseResult = null
+  try {
+      parseResult = jsonRequestSchema.parse(body)
+  } catch (error) {
+    return sendRes({ error: `Cannot parse json: ${error}` }, 400)
+  }
+  // const parseResult = jsonRequestSchema.passthrough().safeParse(body)
+  // if (!parseResult.success)
+  //   return sendRes({ error: `Cannot parse json: ${parseResult.error}` }, 400)
 
   const {
     device_id: deviceId,
