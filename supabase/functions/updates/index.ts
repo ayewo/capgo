@@ -48,7 +48,8 @@ async function main(url: URL, headers: BaseHeaders, method: string, body: AppInf
     return update(body)
   }
 
-  const parseResult = jsonRequestSchema.passthrough().safeParse(body)
+  // passthrough().
+  const parseResult = jsonRequestSchema.safeParse(body)
   if (!parseResult.success)
     return sendRes({ error: `Cannot parse json: ${parseResult.error}` }, 400)
 
